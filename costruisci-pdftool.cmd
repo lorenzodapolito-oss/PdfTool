@@ -1,18 +1,25 @@
 @echo off
-rem Compila PdfTool. Metti questo file in AmbienteRust e il progetto in Progetti\PdfTool.
+rem Scarica (o aggiorna) e compila PdfTool. Metti questo file in AmbienteRust.
 title Costruisci PdfTool
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 set "CARGO_HOME=%ROOT%\rust\cargo"
 set "RUSTUP_HOME=%ROOT%\rust\rustup"
 set "PATH=%ROOT%\winlibs\mingw64\bin;%ROOT%\rust\cargo\bin;%ROOT%\git\cmd;%ROOT%\git\bin;%PATH%"
-set "PROJ=%ROOT%\Progetti\PdfTool"
-if not exist "%PROJ%\Cargo.toml" (
-  echo ERRORE: non trovo %PROJ%\Cargo.toml
-  pause
-  exit /b 1
-)
+set "PROG=%ROOT%\Progetti"
+set "PROJ=%PROG%\PdfTool"
+if not exist "%PROG%" mkdir "%PROG%"
+cd /d "%PROG%"
 taskkill /f /im pdftool.exe >nul 2>&1
+echo === Scarico o aggiorno PdfTool ===
+if exist "%PROJ%\.git" (
+  git -c "safe.directory=*" -C "%PROJ%" fetch origin
+  if errorlevel 1 goto fail
+  git -c "safe.directory=*" -C "%PROJ%" reset --hard origin/main
+) else (
+  git clone https://github.com/lorenzodapolito-oss/PdfTool "%PROJ%"
+)
+if errorlevel 1 goto fail
 cd /d "%PROJ%"
 echo === Compilo (la prima volta ci vogliono diversi minuti) ===
 cargo build --release
